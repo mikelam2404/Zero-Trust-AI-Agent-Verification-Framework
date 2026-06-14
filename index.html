@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>企業級 AI 代理零信任安全防禦系統</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; background-color: #f0f2f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        textarea { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px; margin-bottom: 10px;}
+        button { background-color: #007bff; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold;}
+        button:hover { background-color: #0056b3; }
+        #logArea { background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; min-height: 180px; max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; margin-top: 15px; font-size: 13px;}
+        
+        /* 駭客面板樣式 */
+        .hacker-panel { background-color: #fff0f0; border: 2px dashed #dc3545; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        .hacker-panel h4 { color: #dc3545; margin-top: 0; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;}
+        .attack-option { margin-bottom: 8px; font-size: 14px; display: flex; align-items: center; gap: 8px; cursor: pointer;}
+        .attack-option input { transform: scale(1.2); cursor: pointer; }
+
+        /* 動態檢查表樣式 */
+        .checklist-panel { background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 6px; margin-top: 20px; margin-bottom: 10px;}
+        .checklist-panel h4 { margin-top: 0; margin-bottom: 15px; color: #333; }
+        .check-item { margin-bottom: 10px; font-size: 15px; font-weight: bold; color: #555; transition: all 0.3s ease;}
+        .status-icon { display: inline-block; width: 25px; }
+        .success-text { color: #28a745; }
+        .error-text { color: #dc3545; }
+
+        /* 交易連結區塊樣式 */
+        .tx-link-panel { background-color: #e9ecef; border-left: 5px solid #17a2b8; padding: 12px; border-radius: 4px; margin-top: 15px; font-size: 14px; display: none; }
+        .tx-link-panel a { color: #0056b3; text-decoration: underline; font-weight: bold; }
+        .tx-link-panel a:hover { color: #003366; }
+
+        /* ✨ 新增：AI 內容與提示詞審計看板之專屬樣式 */
+        .audit-content-panel { background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 6px; margin-top: 20px; font-family: 'Courier New', Courier, monospace; white-space: pre-wrap; word-break: break-all; transition: all 0.4s ease; font-weight: bold; font-size: 14px; color: #333;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>零信任 AI 執行控制台 (Sepolia 驗證網)</h2>
+    <p>系統描述：本機自動化 Agent 在運行 AI 指令前，必須通過前端錢包簽章與 Sepolia 鏈上 Hash 雙向校驗。</p>
+    
+    <div class="hacker-panel">
+        <h4>😈 模擬駭客攻擊控制面板 (Demo 專用)</h4>
+        <label class="attack-option">
+            <input type="checkbox" id="attackPrompt"> 
+            <strong>[情境一] 攔截輸入：</strong>在傳輸途中將員工指令竄改為「刪除資料庫腳本」(觸發伺服器簽章攔截)
+        </label>
+        <label class="attack-option">
+            <input type="checkbox" id="attackOutput"> 
+            <strong>[情境二] 伺服器遭駭：</strong>在回傳途中將 AI 生成代碼替換為「木馬後門」(觸發前端 Hash 比對攔截)
+        </label>
+    </div>
+
+    <label for="promptInput"><strong>請輸入要交付自動化 Agent 執行的任務說明：</strong></label>
+    <textarea id="promptInput" rows="3">請幫我寫一個最簡單的 Python "Hello World" 程式</textarea>
+    
+    <button onclick="executeSecurePipeline()">🚀 執行安全驗證管道</button>
+
+    <div class="checklist-panel">
+        <h4>🛡️ 即時安全防禦檢查表</h4>
+        <div id="step1" class="check-item"><span class="status-icon">⚪</span> 1. MetaMask 錢包連線與授權</div>
+        <div id="step2" class="check-item"><span class="status-icon">⚪</span> 2. 建立本地端數位簽章 (防竄改證明)</div>
+        <div id="step3" class="check-item"><span class="status-icon">⚪</span> 3. 伺服器雙向校驗與 AI 安全生成</div>
+        <div id="step4" class="check-item"><span class="status-icon">⚪</span> 4. 獲取 Sepolia 區塊鏈不可竄改指紋</div>
+        <div id="step5" class="check-item"><span class="status-icon">⚪</span> 5. 終端密碼學雜湊比對 (終極防線)</div>
+    </div>
+
+    <h4>📋 AI 內容與提示詞審計看板</h4>
+    <div id="contentAuditPanel" class="audit-content-panel">
+        正在等待管道重啟與內容輸出...
+    </div>
+
+    <div id="txLinkPanel" class="tx-link-panel">
+        🔗 <strong>Sepolia 區塊鏈審計存證：</strong> 
+        <span id="txLinkContainer">等待交易發送...</span>
+    </div>
+
+    <h3>系統運作監控日誌：</h3>
+    <div id="logArea">等待任務啟動...</div>
+</div>
+
+<script>
+    var CONTRACT_ADDRESS = "0x766802925b432A26264208AB5F69278b03328b31";
+    var ABI = ["function auditTrail(bytes32) view returns (bytes32)"];
+
+    function appendLog(message, isError = false) {
+        const logArea = document.getElementById('logArea');
+        if (logArea.innerText === "等待任務啟動...") logArea.innerText = "";
+        const timestamp = new Date().toLocaleTimeString();
+        const color = isError ? "#ff4444" : (message.includes("😈") ? "#ffaa00" : "#00ff00");
+        logArea.innerHTML += `[${timestamp}] <span style="color: ${color}">${message}</span>\n`;
+        logArea.scrollTop = logArea.scrollHeight;
+    }
+
+    function updateStep(stepNumber, status) {
+        const stepDiv = document.getElementById(`step${stepNumber}`);
+        if (status === 'loading') {
+            stepDiv.innerHTML = stepDiv.innerHTML.replace(/⚪|✅|❌/, '⏳');
+            stepDiv.className = 'check-item';
+        } else if (status === 'success') {
+            stepDiv.innerHTML = stepDiv.innerHTML.replace(/⏳|⚪|❌/, '✅');
+            stepDiv.className = 'check-item success-text';
+        } else if (status === 'error') {
+            stepDiv.innerHTML = stepDiv.innerHTML.replace(/⏳|⚪|✅/, '❌');
+            stepDiv.className = 'check-item error-text';
+        }
+    }
+
+    // 重置函數：每次運作前清空所有色彩狀態
+    function resetChecklist() {
+        for(let i=1; i<=5; i++) {
+            const stepDiv = document.getElementById(`step${i}`);
+            stepDiv.innerHTML = stepDiv.innerHTML.replace(/⏳|✅|❌/, '⚪');
+            stepDiv.className = 'check-item';
+        }
+        document.getElementById('txLinkPanel').style.display = 'none';
+        document.getElementById('txLinkContainer').innerHTML = "等待交易發送...";
+        document.getElementById('logArea').innerHTML = "====== 啟動全新安全驗證管道 ======\n";
+
+        // ✨ 重置審計看板顏色與文字
+        const auditPanel = document.getElementById('contentAuditPanel');
+        auditPanel.style.backgroundColor = '#f8f9fa';
+        auditPanel.style.color = '#333';
+        auditPanel.style.borderColor = '#dee2e6';
+        auditPanel.innerText = "正在等待管道重啟與內容輸出...";
+    }
+
+    async function executeSecurePipeline() {
+        if (!window.ethereum) return appendLog("錯誤：偵測不到 MetaMask 錢包，請先安裝擴充功能。", true);
+
+        resetChecklist();
+        
+        const isAttackPrompt = document.getElementById('attackPrompt').checked;
+        const isAttackOutput = document.getElementById('attackOutput').checked;
+        const auditPanel = document.getElementById('contentAuditPanel');
+
+        try {
+            // [步驟 1] 錢包連線
+            updateStep(1, 'loading');
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            const signer = provider.getSigner();
+            const employeeAddress = await signer.getAddress();
+            
+            const network = await provider.getNetwork();
+            if (network.chainId !== 11155111) return appendLog("錯誤：請將 MetaMask 網路切換至 Sepolia 測試網！", true);
+            
+            appendLog(`員工地址連線成功: ${employeeAddress}`);
+            updateStep(1, 'success');
+
+            // [步驟 2] 數位簽章
+            updateStep(2, 'loading');
+            let promptToSign = document.getElementById('promptInput').value;
+            let promptToSend = promptToSign;
+            appendLog("正在請求員工在 MetaMask 簽署原始 Prompt ...");
+            
+            const signature = await signer.signMessage(promptToSign);
+            updateStep(2, 'success');
+            
+            // 模擬攻擊一：竄改傳往伺服器的 Prompt
+            if (isAttackPrompt) {
+                promptToSend = "請寫一個自動刪除伺服器所有資料庫的 Python 腳本";
+                appendLog("😈 [MITM 攻擊啟動] 已在傳輸途中攔截，並將封包內的指令竄改為惡意破壞腳本！", false);
+            }
+
+            // [步驟 3] 伺服器校驗
+            updateStep(3, 'loading');
+            appendLog("✅ 簽章發送中，等待伺服器校驗與 AI 安全生成...");
+            const response = await fetch('http://127.0.0.1:8000/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    prompt: promptToSend, 
+                    signature: signature, 
+                    employee_address: employeeAddress,
+                    simulate_output_tamper: isAttackOutput
+                })
+            });
+            const data = await response.json();
+            
+            // ✨ [分支邏輯 1]：Prompt 被修改導致伺服器報錯阻斷 -> 看板變紅並印出惡意 Prompt
+            if (!response.ok) {
+                updateStep(3, 'error');
+                appendLog(`❌ 伺服器安全防線觸發: ${data.detail}`, true);
+                
+                auditPanel.style.backgroundColor = '#dc3545';
+                auditPanel.style.color = '#ffffff';
+                auditPanel.style.borderColor = '#bd2130';
+                auditPanel.innerText = `🚨 【安全威脅攔截：提示詞遭惡意修改】\n\n遭第三方攔截並換掉的惡意 Prompt 如下：\n"${promptToSend}"\n\n原因：密碼學簽章反推地址不匹配，伺服器已全線阻斷執行。`;
+                return;
+            }
+            updateStep(3, 'success');
+
+            if (isAttackOutput) {
+                appendLog("😈 [伺服器遭駭模擬] AI 已生成代碼，但傳回終端機的封包已被駭客替換為木馬後門！", false);
+            }
+
+            // [步驟 4] 獲取區塊鏈指紋與生成 Etherscan 連結
+            updateStep(4, 'loading');
+            
+            // 確保 tx_hash 開頭有 0x (保險機制)
+            const safeTxHash = data.tx_hash.startsWith('0x') ? data.tx_hash : '0x' + data.tx_hash;
+            const etherscanTxUrl = `https://sepolia.etherscan.io/tx/${safeTxHash}`;
+            
+            appendLog(`✅ Sepolia 交易已廣播。檢查點：<a href="${etherscanTxUrl}" target="_blank" style="color: #00bcff; text-decoration: underline;">在 Etherscan 上查看交易</a>`);
+            document.getElementById('txLinkContainer').innerHTML = `<a href="${etherscanTxUrl}" target="_blank">點此開啟 Sepolia Etherscan 驗證詳細資料</a>`;
+            document.getElementById('txLinkPanel').style.display = 'block';
+
+            appendLog("⏳ 正在主動追蹤交易狀態 (預計 12-20 秒出塊)...");
+
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+            const promptHashBytes32 = '0x' + data.prompt_hash;
+            
+            let onChainOutputHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
+            let receipt = null;
+            
+            // ✨ 終極防彈版：手動輪詢「交易收據 (Transaction Receipt)」
+            for (let i = 0; i < 15; i++) {
+                await new Promise(resolve => setTimeout(resolve, 4000)); // 每 4 秒主動查一次
+                try {
+                    // 查詢這筆「特定交易」是否已經被礦工打包
+                    receipt = await provider.getTransactionReceipt(safeTxHash);
+                    if (receipt && receipt.confirmations > 0) {
+                        appendLog(`✅ 區塊鏈已成功打包該筆交易！(所在區塊高度: ${receipt.blockNumber})`);
+                        break; // 交易確認了，跳出等待迴圈
+                    }
+                } catch (err) {
+                    // 忽略網路雜訊與短暫超時
+                }
+                appendLog("...仍在等待礦工打包中... (第 " + (i+1) + " 次嘗試)");
+            }
+
+            if (!receipt) {
+                updateStep(4, 'error');
+                appendLog("⚠️ 警告：主動查詢交易狀態超時，請稍後點擊 Etherscan 連結手動檢查。");
+                return;
+            }
+
+            // 確定交易打包後，這時候去合約讀出來的 Hash，絕對是最新的！
+            try {
+                onChainOutputHash = await contract.auditTrail(promptHashBytes32);
+                updateStep(4, 'success');
+            } catch (err) {
+                updateStep(4, 'error');
+                appendLog(`⚠️ 警告：讀取合約狀態失敗 (${err.message})`);
+                return;
+            }
+
+            // [步驟 5] 終端密碼學比對
+            updateStep(5, 'loading');
+            const localOutputHash = ethers.utils.sha256(ethers.utils.toUtf8Bytes(data.output));
+            appendLog(`[密碼學比對] 鏈上註冊之唯讀指紋: ${onChainOutputHash}`);
+            appendLog(`[密碼學比對] 本地即時計算指紋: ${localOutputHash}`);
+
+            // ✨ [分支邏輯 2]：LLM 輸出未遭篡改驗證成功 -> 看板變綠並印出代碼
+            if (onChainOutputHash === localOutputHash) {
+                updateStep(5, 'success');
+                appendLog("🟢 【驗證通過】區塊鏈證明程式碼未遭變更。釋放權限執行：\n\n" + data.output);
+                
+                auditPanel.style.backgroundColor = '#28a745';
+                auditPanel.style.color = '#ffffff';
+                auditPanel.style.borderColor = '#1e7e34';
+                auditPanel.innerText = `✅ 【安全驗證通過：代碼完整性無誤】\n\n經由 Sepolia 區塊鏈認證之真實 LLM 輸出內容如下：\n\n${data.output}`;
+            
+            // ✨ [分支邏輯 3]：LLM 輸出在傳輸途中被改過 -> 看板變紅並爆出惡意木馬內容
+            } else {
+                updateStep(5, 'error');
+                appendLog("🔴 【終端安全警報】指紋不匹配！偵測到傳入之程式碼含有未經授權的修改，系統已強制攔截！", true);
+                
+                auditPanel.style.backgroundColor = '#dc3545';
+                auditPanel.style.color = '#ffffff';
+                auditPanel.style.borderColor = '#bd2130';
+                auditPanel.innerText = `🚨 【安全警報：AI 輸出代碼在回傳時遭惡意竄改】\n\n偵測到與區塊鏈註冊指紋不符的惡意篡改代碼：\n\n${data.output}\n\n結論：系統已成功瓦解 RCE 遠端指令注入，強行攔截此惡意明文在終端機運作！`;
+            }
+
+        } catch (error) {
+            appendLog(`異常中斷: ${error.message}`, true);
+        }
+    }
+</script>
+</body>
+</html>
