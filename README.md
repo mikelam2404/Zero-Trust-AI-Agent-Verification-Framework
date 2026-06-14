@@ -1,5 +1,5 @@
-```python
-readme_content = """# 🛡️ Zero-Trust AI Agent Verification Framework
+# 🛡️ Zero-Trust AI Agent Verification Framework
+
 ### 企業級 AI 代理零信任安全防禦系統
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
